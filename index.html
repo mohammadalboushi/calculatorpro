@@ -1,0 +1,2151 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="theme-color" content="#FFFFFF">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Calculator Pro">
+    <link rel="manifest" href="./manifest.json">
+    <link rel="icon" type="image/png" href="./icon-512.png">
+    <link rel="apple-touch-icon" href="./icon-512.png">
+    <title>الحاسبة الاحترافية | Calculator Pro</title>
+    <style>
+        :root {
+            --bg-app: #F1F5F9;
+            --bg-shell: #FFFFFF;
+            --bg-display: #F8FAFC;
+            --border-light: #E2E8F0;
+            --border-focus: #2563EB;
+
+            --text-primary: #0F172A;
+            --text-secondary: #64748B;
+            --text-muted: #94A3B8;
+
+            --primary: #2563EB;
+            --primary-pressed: #1D4ED8;
+            --primary-soft: #EFF6FF;
+
+            --btn-num-bg: #FFFFFF;
+            --btn-num-pressed: #F1F5F9;
+            --btn-fn-bg: #EEF2F6;
+            --btn-fn-pressed: #E2E8F0;
+            --btn-op-bg: #EFF6FF;
+            --btn-op-pressed: #DBEAFE;
+
+            --danger: #DC2626;
+            --danger-soft: #FEF2F2;
+
+            --shadow-card: 0 10px 30px -5px rgba(15, 23, 42, 0.06);
+            --shadow-btn: 0 2px 4px rgba(15, 23, 42, 0.04), 0 0 0 1px rgba(15, 23, 42, 0.05);
+            --font-sans: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+            font-family: var(--font-sans);
+            touch-action: manipulation;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        input {
+            user-select: text;
+            -webkit-user-select: text;
+        }
+
+        html, body {
+            width: 100%;
+            height: 100%;
+            height: 100dvh;
+            overflow: hidden;
+            background-color: var(--bg-app);
+            color: var(--text-primary);
+            padding-top: env(safe-area-inset-top, 0px);
+            padding-bottom: env(safe-area-inset-bottom, 0px);
+        }
+
+        .app-container {
+            width: 100%;
+            max-width: 440px;
+            height: 100%;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            background-color: var(--bg-shell);
+            position: relative;
+            overflow: hidden;
+            box-shadow: var(--shadow-card);
+        }
+
+        @media (min-width: 500px) {
+            body {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                padding: 16px;
+            }
+            .app-container {
+                height: min(860px, 95dvh);
+                border-radius: 28px;
+                border: 1px solid var(--border-light);
+            }
+        }
+
+        /* --- الشريط العلوي --- */
+        .top-header {
+            height: 58px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 16px;
+            flex-shrink: 0;
+            direction: ltr;
+            background: var(--bg-shell);
+            border-bottom: 1px solid var(--border-light);
+            z-index: 100;
+        }
+
+        .nav-icon {
+            width: 42px;
+            height: 42px;
+            border-radius: 12px;
+            background: var(--bg-display);
+            border: 1px solid var(--border-light);
+            color: var(--text-secondary);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            transition: transform 0.08s ease, background-color 0.12s ease, color 0.12s ease;
+        }
+
+        .nav-icon.pressed, .nav-icon:active {
+            transform: scale(0.92);
+            background: var(--btn-fn-bg);
+            color: var(--primary);
+        }
+
+        .nav-icon.home-active {
+            background: var(--primary);
+            border-color: var(--primary);
+            color: #FFFFFF;
+        }
+
+        .nav-icon svg {
+            width: 22px;
+            height: 22px;
+            fill: currentColor;
+        }
+
+        .header-title {
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .rate-pill {
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: var(--primary);
+            background: var(--primary-soft);
+            padding: 3px 8px;
+            border-radius: 8px;
+            direction: ltr;
+        }
+
+        /* --- قائمة الأدوات المنسدلة --- */
+        .tools-bar {
+            background: var(--bg-shell);
+            padding: 14px;
+            display: none;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 8px;
+            border-bottom: 1px solid var(--border-light);
+            position: absolute;
+            top: 58px;
+            left: 0;
+            width: 100%;
+            z-index: 99;
+            box-shadow: 0 14px 28px rgba(15, 23, 42, 0.12);
+            direction: rtl;
+        }
+
+        .tools-bar.show {
+            display: grid;
+        }
+
+        .tool-box {
+            background: var(--bg-display);
+            border-radius: 14px;
+            padding: 10px 4px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            cursor: pointer;
+            height: 74px;
+            border: 1.5px solid var(--border-light);
+            color: var(--text-secondary);
+            transition: all 0.12s ease;
+        }
+
+        .tool-box:active {
+            transform: scale(0.95);
+        }
+
+        .tool-box.active {
+            border-color: var(--primary);
+            background: var(--primary-soft);
+            color: var(--primary);
+        }
+
+        .tool-box svg {
+            width: 24px;
+            height: 24px;
+            fill: currentColor;
+        }
+
+        .tool-name {
+            font-size: 0.72rem;
+            font-weight: 700;
+            text-align: center;
+            line-height: 1.1;
+        }
+
+        /* --- شاشة العرض والحقول --- */
+        .display-area {
+            flex: 0 0 auto;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            padding: 10px 16px 8px;
+            background: var(--bg-shell);
+            min-height: 0;
+        }
+
+        .result-line {
+            background: var(--bg-display);
+            border: 1px solid var(--border-light);
+            border-radius: 18px;
+            padding: 12px 16px;
+            text-align: right;
+            margin-bottom: 8px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            min-height: 88px;
+            transition: all 0.15s ease;
+        }
+
+        .result-line.final-state {
+            background: var(--primary-soft);
+            border-color: #BFDBFE;
+        }
+
+        .result-line.error-state {
+            background: var(--danger-soft);
+            border-color: #FECACA;
+        }
+
+        .main-res {
+            font-size: 2.1rem;
+            font-weight: 800;
+            color: var(--text-primary);
+            direction: ltr;
+            word-wrap: break-word;
+            line-height: 1.15;
+            transition: font-size 0.12s ease, color 0.12s ease;
+        }
+
+        .result-line.final-state .main-res {
+            color: var(--primary);
+        }
+
+        .result-line.error-state .main-res {
+            color: var(--danger);
+            font-size: 1.35rem !important;
+            direction: rtl;
+        }
+
+        .sub-res {
+            font-size: 1.1rem;
+            color: var(--text-secondary);
+            direction: ltr;
+            margin-top: 4px;
+            font-weight: 700;
+            min-height: 1.3em;
+            line-height: 1.2;
+        }
+
+        .inputs-wrapper {
+            display: flex;
+            gap: 8px;
+            direction: rtl;
+            flex-shrink: 0;
+        }
+
+        .curr-box {
+            flex: 1;
+            padding: 8px 12px;
+            border: 1.5px solid var(--border-light);
+            background: var(--bg-display);
+            border-radius: 14px;
+            text-align: right;
+            transition: border-color 0.15s ease, background-color 0.15s ease;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            min-height: 64px;
+            justify-content: center;
+        }
+
+        .curr-box.active {
+            border-color: var(--primary);
+            background: #FFFFFF;
+            box-shadow: 0 2px 10px rgba(37, 99, 235, 0.08);
+        }
+
+        .box-top-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 3px;
+        }
+
+        .currency-toggle-btn {
+            font-size: 0.78rem;
+            color: var(--primary);
+            font-weight: 800;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            background: var(--primary-soft);
+            padding: 3px 10px;
+            border-radius: 8px;
+            width: fit-content;
+            border: 1px solid #BFDBFE;
+        }
+
+        .currency-toggle-btn:active {
+            transform: scale(0.95);
+        }
+
+        .currency-toggle-btn svg {
+            width: 14px;
+            height: 14px;
+            fill: currentColor;
+        }
+
+        .curr-label {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            font-weight: 700;
+            margin-bottom: 2px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .curr-label svg {
+            width: 13px;
+            height: 13px;
+            fill: var(--primary);
+        }
+
+        .curr-val-input {
+            font-size: 1.45rem;
+            font-weight: 800;
+            direction: ltr;
+            text-align: left;
+            color: var(--text-primary);
+            background: transparent;
+            border: none;
+            outline: none;
+            width: 100%;
+            padding: 0;
+            margin: 0;
+            caret-color: var(--primary);
+        }
+
+        .curr-val-input::placeholder {
+            color: var(--text-muted);
+        }
+
+        /* --- شريط الحذف الأوسط --- */
+        .middle-toolbar {
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 18px;
+            background: var(--bg-shell);
+            flex-shrink: 0;
+            direction: ltr;
+        }
+
+        .mode-badge {
+            font-size: 0.76rem;
+            font-weight: 700;
+            color: var(--text-secondary);
+            direction: rtl;
+        }
+
+        .backspace-btn {
+            width: 44px;
+            height: 34px;
+            border-radius: 10px;
+            color: var(--primary);
+            background: var(--primary-soft);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: transform 0.08s ease, background-color 0.12s ease;
+        }
+
+        .backspace-btn.pressed, .backspace-btn:active {
+            transform: scale(0.9);
+            background: var(--btn-op-pressed);
+        }
+
+        .backspace-btn svg {
+            width: 22px;
+            height: 22px;
+            fill: currentColor;
+        }
+
+        /* --- لوحة الأزرار المتجاوبة بدون سكرول --- */
+        .keypad {
+            flex: 1 1 auto;
+            min-height: 0;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            grid-template-rows: repeat(5, 1fr);
+            background-color: var(--bg-shell);
+            direction: ltr;
+            padding: 6px 16px 14px;
+            gap: clamp(8px, 1.6vh, 12px);
+        }
+
+        .k-btn {
+            border: none;
+            border-radius: 18px;
+            font-size: clamp(1.35rem, 3.2vh, 1.75rem);
+            font-weight: 700;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            outline: none;
+            box-shadow: var(--shadow-btn);
+            transition: transform 0.06s ease, background-color 0.08s ease;
+            min-height: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        .k-btn svg {
+            width: clamp(22px, 3vh, 26px);
+            height: clamp(22px, 3vh, 26px);
+            fill: currentColor;
+            pointer-events: none;
+        }
+
+        .k-btn.pressed {
+            transform: scale(0.93);
+        }
+
+        .btn-light {
+            background-color: var(--btn-fn-bg);
+            color: var(--text-primary);
+            font-size: clamp(1.15rem, 2.7vh, 1.4rem);
+        }
+        .btn-light.pressed {
+            background-color: var(--btn-fn-pressed);
+        }
+
+        .btn-clear {
+            color: var(--danger);
+            background-color: var(--danger-soft);
+        }
+        .btn-clear.pressed {
+            background-color: #FEE2E2;
+        }
+
+        .btn-dark {
+            background-color: var(--btn-num-bg);
+            color: var(--text-primary);
+        }
+        .btn-dark.pressed {
+            background-color: var(--btn-num-pressed);
+        }
+
+        .btn-orange {
+            background-color: var(--btn-op-bg);
+            color: var(--primary);
+        }
+        .btn-orange.pressed {
+            background-color: var(--btn-op-pressed);
+        }
+
+        .btn-equal {
+            background-color: var(--primary) !important;
+            color: #FFFFFF !important;
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.28);
+        }
+        .btn-equal.pressed {
+            background-color: var(--primary-pressed) !important;
+        }
+
+        /* --- بطاقات نتائج العمر وفرق التواريخ --- */
+        .age-result-container {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            width: 100%;
+            direction: rtl;
+        }
+
+        .age-box-res {
+            background: #FFFFFF;
+            border: 1px solid var(--border-light);
+            border-radius: 12px;
+            padding: 4px 6px;
+            text-align: center;
+            flex: 1;
+        }
+
+        .age-num {
+            font-size: 1.25rem;
+            font-weight: 800;
+            color: var(--primary);
+            display: block;
+            line-height: 1.1;
+        }
+
+        .age-txt {
+            font-size: 0.72rem;
+            font-weight: 700;
+            color: var(--text-secondary);
+        }
+
+        /* --- النوافذ المنبثقة --- */
+        .modal {
+            position: absolute;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.45);
+            z-index: 2000;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            backdrop-filter: blur(3px);
+            direction: rtl;
+            padding: 16px;
+        }
+
+        .modal.show {
+            display: flex;
+        }
+
+        .modal-card {
+            background: var(--bg-shell);
+            width: 100%;
+            max-width: 350px;
+            border-radius: 22px;
+            padding: 18px;
+            max-height: 80%;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 20px 40px rgba(15, 23, 42, 0.2);
+            border: 1px solid var(--border-light);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--border-light);
+            margin-bottom: 12px;
+        }
+
+        .modal-title {
+            font-weight: 800;
+            font-size: 1.05rem;
+            color: var(--text-primary);
+        }
+
+        .close-icon-btn {
+            width: 34px;
+            height: 34px;
+            border-radius: 10px;
+            border: none;
+            background: var(--bg-display);
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+
+        .close-icon-btn svg {
+            width: 18px;
+            height: 18px;
+            fill: currentColor;
+        }
+
+        .rate-group label {
+            display: block;
+            font-size: 0.82rem;
+            color: var(--text-secondary);
+            font-weight: 700;
+            margin-bottom: 6px;
+        }
+
+        .rate-group input {
+            width: 100%;
+            border: 1.5px solid var(--border-light);
+            background: var(--bg-display);
+            padding: 12px;
+            font-size: 1.35rem;
+            margin-bottom: 14px;
+            text-align: center;
+            border-radius: 14px;
+            color: var(--primary);
+            font-weight: 800;
+            outline: none;
+            direction: ltr;
+        }
+
+        .rate-group input:focus {
+            border-color: var(--primary);
+            background: #FFFFFF;
+        }
+
+        .setting-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-top: 1px solid var(--border-light);
+            margin-bottom: 10px;
+        }
+
+        .setting-label {
+            font-size: 0.88rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .toggle-btn {
+            padding: 6px 14px;
+            border-radius: 10px;
+            border: 1px solid var(--border-light);
+            background: var(--bg-display);
+            font-weight: 700;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            cursor: pointer;
+        }
+
+        .toggle-btn.active {
+            background: var(--primary-soft);
+            color: var(--primary);
+            border-color: #BFDBFE;
+        }
+
+        .save-modal-btn {
+            width: 100%;
+            border: none;
+            border-radius: 14px;
+            height: 46px;
+            font-size: 1rem;
+            font-weight: 800;
+            background: var(--primary);
+            color: #FFFFFF;
+            cursor: pointer;
+        }
+
+        .history-toolbar {
+            display: flex;
+            justify-content: flex-end;
+            margin-bottom: 8px;
+        }
+
+        .clear-hist-btn {
+            border: none;
+            background: var(--danger-soft);
+            color: var(--danger);
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .clear-hist-btn svg {
+            width: 15px;
+            height: 15px;
+            fill: currentColor;
+        }
+
+        .history-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            overflow-y: auto;
+            flex-grow: 1;
+            max-height: 300px;
+        }
+
+        .history-item {
+            padding: 10px 12px;
+            border-radius: 12px;
+            background: var(--bg-display);
+            border: 1px solid var(--border-light);
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+        }
+
+        .history-item:active {
+            background: var(--primary-soft);
+            border-color: var(--primary);
+        }
+
+        /* تكيّف ذكي للشاشات القصيرة جداً */
+        @media (max-height: 640px) {
+            .top-header { height: 48px; }
+            .tools-bar { top: 48px; }
+            .result-line { min-height: 70px; padding: 8px 12px; margin-bottom: 5px; }
+            .main-res { font-size: 1.75rem; }
+            .sub-res { font-size: 0.95rem; }
+            .curr-box { min-height: 52px; padding: 5px 10px; }
+            .curr-val-input { font-size: 1.25rem; }
+            .middle-toolbar { height: 30px; }
+            .keypad { gap: 6px; padding: 4px 12px 10px; }
+            .k-btn { border-radius: 14px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        <!-- الشريط العلوي -->
+        <div class="top-header">
+            <button class="nav-icon" id="btnRate" aria-label="سعر الصرف والإعدادات">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z"/>
+                </svg>
+            </button>
+
+            <div class="header-title">
+                <span class="rate-pill" id="headerRateBadge">89,000 L.L</span>
+                <span id="headerModeTitle">الحاسبة</span>
+            </div>
+
+            <div style="display: flex; gap: 8px;">
+                <button class="nav-icon" id="btnGrid" aria-label="الأدوات الإضافية">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M4 4h7v7H4V4zm9 0h7v7h-7V4zM4 13h7v7H4v-7zm9 0h7v7h-7v-7z"/>
+                    </svg>
+                </button>
+                <button class="nav-icon home-active" id="btnHome" aria-label="الحاسبة الرئيسية">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-2 12H7v-2h10v2zm0-4H7V9h10v2z"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- شريط الأدوات (أيقونات SVG سادة 100%) -->
+        <div class="tools-bar" id="toolsMenu">
+            <div class="tool-box" id="toolAge">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M12 6a2 2 0 0 0 2-2c0-.38-.1-.73-.29-1.03L12 0l-1.71 2.97c-.19.3-.29.65-.29 1.03 0 1.1.9 2 2 2zm4.6 9.99l-1.07-1.07-1.08 1.07c-1.3 1.3-3.58 1.31-4.89 0l-1.07-1.07-1.09 1.07C6.75 16.64 5.88 17 4.96 17c-.73 0-1.4-.23-1.96-.61V21c0 .55.45 1 1 1h16c.55 0 1-.45 1-1v-4.61c-.56.38-1.23.61-1.96.61-.92 0-1.79-.36-2.44-1.01zM18 9h-5V7h-2v2H6c-1.66 0-3 1.34-3 3v1.54c0 1.08.88 1.96 1.96 1.96.52 0 1.02-.2 1.38-.57l2.14-2.13 2.13 2.13c.74.74 2.03.74 2.77 0l2.14-2.13 2.13 2.13c.37.37.86.57 1.38.57 1.08 0 1.96-.88 1.96-1.96V12C21 10.34 19.66 9 18 9z"/>
+                </svg>
+                <span class="tool-name">العمر</span>
+            </div>
+            <div class="tool-box" id="toolDiff">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20a2 2 0 0 0 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10zm-7-7h5v5h-5v-5z"/>
+                </svg>
+                <span class="tool-name">فرق التواريخ</span>
+            </div>
+            <div class="tool-box" id="toolScale">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M12 3c-4.97 0-9 4.03-9 9 0 4.97 4.03 9 9 9s9-4.03 9-9c0-4.97-4.03-9-9-9zm0 16c-3.86 0-7-3.14-7-7s3.14-7 7-7 7 3.14 7 7-3.14 7-7 7zm1-7.41V7h-2v5.41l3.29 3.29 1.41-1.41L13 11.59z"/>
+                </svg>
+                <span class="tool-name">الميزان</span>
+            </div>
+            <div class="tool-box" id="toolSpeed">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M20.38 8.57l-1.23 1.85a8 8 0 0 1-.22 7.58H5.07A8 8 0 0 1 15.58 6.85l1.85-1.23A10 10 0 0 0 3.35 19a2 2 0 0 0 1.72 1h13.85a2 2 0 0 0 1.74-1 10 10 0 0 0-.27-10.44zm-9.79 6.84a2 2 0 0 0 2.83 0l5.66-8.49-8.49 5.66a2 2 0 0 0 0 2.83z"/>
+                </svg>
+                <span class="tool-name">السرعة</span>
+            </div>
+            <div class="tool-box" id="toolHistory">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M13 3a9 9 0 0 0-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42A8.954 8.954 0 0 0 13 21a9 9 0 0 0 0-18zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"/>
+                </svg>
+                <span class="tool-name">السجل</span>
+            </div>
+        </div>
+
+        <!-- منطقة النتيجة والحقول -->
+        <div class="display-area">
+            <div class="result-line" id="resultContainer">
+                <div class="main-res" id="mainResult">0</div>
+                <div class="sub-res" id="subResult">0 $</div>
+            </div>
+
+            <div class="inputs-wrapper" id="inputsContainer">
+                <div class="curr-box active" id="box1">
+                    <div class="box-top-row">
+                        <div class="currency-toggle-btn" id="currencyToggleBtn">
+                            <span id="currToggleText">ليرة (L.L)</span>
+                            <svg viewBox="0 0 24 24" aria-hidden="true">
+                                <path d="M6.99 11L3 15l3.99 4v-3H14v-2H6.99v-3zM21 9l-3.99-4v3H10v2h7.01v3L21 9z"/>
+                            </svg>
+                        </div>
+                        <div class="curr-label" id="label1" style="display:none">القيمة</div>
+                    </div>
+                    <input type="text" class="curr-val-input" id="val1" inputmode="none" readonly placeholder="0">
+                </div>
+
+                <div class="curr-box" id="box2" style="display:none">
+                    <div class="curr-label" id="label2">---</div>
+                    <input type="text" class="curr-val-input" id="val2" inputmode="none" readonly placeholder="0">
+                </div>
+
+                <div class="curr-box" id="box3" style="display:none">
+                    <div class="curr-label" id="label3">السنة</div>
+                    <input type="text" class="curr-val-input" id="val3" inputmode="none" readonly placeholder="0000">
+                </div>
+            </div>
+        </div>
+
+        <!-- شريط الحذف الأوسط -->
+        <div class="middle-toolbar">
+            <div class="mode-badge" id="subModeHint">حساب فوري</div>
+            <button class="backspace-btn" id="btnBackspace" aria-label="حذف آخر رقم">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M22 3H7c-.69 0-1.23.35-1.59.88L0 12l5.41 8.11c.36.53.9.89 1.59.89h15c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-3 12.59L17.59 17 14 13.41 10.41 17 9 15.59 12.59 12 9 8.41 10.41 7 14 10.59 17.59 7 19 8.41 15.41 12 19 15.59z"/>
+                </svg>
+            </button>
+        </div>
+
+        <!-- لوحة الأزرار -->
+        <div class="keypad">
+            <button class="k-btn btn-light btn-clear" data-action="clear" aria-label="مسح الكل">C</button>
+            <button class="k-btn btn-light" data-action="parens" aria-label="الأقواس">()</button>
+            <button class="k-btn btn-light" data-val="%" aria-label="نسبة مئوية">%</button>
+            <button class="k-btn btn-orange" data-val="/" aria-label="قسمة">
+                <svg viewBox="0 0 24 24"><path d="M12 5a2 2 0 1 0 0 4 2 2 0 0 0 0-4zm-7 6a1 1 0 0 0 0 2h14a1 1 0 1 0 0-2H5zm7 4a2 2 0 1 0 0 4 2 2 0 0 0 0-4z"/></svg>
+            </button>
+
+            <button class="k-btn btn-dark" data-val="7">7</button>
+            <button class="k-btn btn-dark" data-val="8">8</button>
+            <button class="k-btn btn-dark" data-val="9">9</button>
+            <button class="k-btn btn-orange" data-val="*" aria-label="ضرب">
+                <svg viewBox="0 0 24 24"><path d="M6.7 5.3a1 1 0 0 0-1.4 1.4L10.6 12l-5.3 5.3a1 1 0 1 0 1.4 1.4L12 13.4l5.3 5.3a1 1 0 0 0 1.4-1.4L13.4 12l5.3-5.3a1 1 0 0 0-1.4-1.4L12 10.6 6.7 5.3z"/></svg>
+            </button>
+
+            <button class="k-btn btn-dark" data-val="4">4</button>
+            <button class="k-btn btn-dark" data-val="5">5</button>
+            <button class="k-btn btn-dark" data-val="6">6</button>
+            <button class="k-btn btn-orange" data-val="-" aria-label="طرح">
+                <svg viewBox="0 0 24 24"><path d="M5 11h14a1 1 0 1 1 0 2H5a1 1 0 1 1 0-2z"/></svg>
+            </button>
+
+            <button class="k-btn btn-dark" data-val="1">1</button>
+            <button class="k-btn btn-dark" data-val="2">2</button>
+            <button class="k-btn btn-dark" data-val="3">3</button>
+            <button class="k-btn btn-orange" data-val="+" aria-label="جمع">
+                <svg viewBox="0 0 24 24"><path d="M12 5a1 1 0 0 1 1 1v5h5a1 1 0 1 1 0 2h-5v5a1 1 0 1 1-2 0v-5H6a1 1 0 1 1 0-2h5V6a1 1 0 0 1 1-1z"/></svg>
+            </button>
+
+            <button class="k-btn btn-dark" data-val="0">0</button>
+            <button class="k-btn btn-dark" data-val="00">00</button>
+            <button class="k-btn btn-dark" data-val=".">.</button>
+            <button class="k-btn btn-orange btn-equal" id="btnEqual" data-action="calc" aria-label="يساوي">=</button>
+        </div>
+
+        <!-- نافذة السجل -->
+        <div id="historyModal" class="modal">
+            <div class="modal-card">
+                <div class="modal-header">
+                    <span class="modal-title">سجل العمليات</span>
+                    <button class="close-icon-btn" id="btnCloseHist" aria-label="إغلاق السجل">
+                        <svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+                    </button>
+                </div>
+                <div class="history-toolbar">
+                    <button class="clear-hist-btn" id="btnClearHistory">
+                        <svg viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+                        <span id="clearHistText">مسح السجل</span>
+                    </button>
+                </div>
+                <ul id="historyList" class="history-list"></ul>
+            </div>
+        </div>
+
+        <!-- نافذة سعر الصرف والإعدادات -->
+        <div id="rateModal" class="modal">
+            <div class="modal-card">
+                <div class="modal-header">
+                    <span class="modal-title">سعر الصرف والإعدادات</span>
+                    <button class="close-icon-btn" id="btnCloseRate" aria-label="إغلاق الإعدادات">
+                        <svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+                    </button>
+                </div>
+                <div class="rate-group">
+                    <label for="exchangeRate">سعر صرف الدولار مقابل الليرة:</label>
+                    <input type="number" id="exchangeRate" value="89000" inputmode="numeric" placeholder="أدخل سعر الصرف">
+                </div>
+                <div class="setting-row">
+                    <span class="setting-label">صوت الأزرار</span>
+                    <button class="toggle-btn active" id="btnToggleSound">مفعّل</button>
+                </div>
+                <button class="save-modal-btn" id="btnSaveRate">حفظ وإغلاق</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        /**
+         * PROFESSIONAL CALCULATOR ENGINE (MERGED EDITION)
+         * - Zero-Latency Touch Response
+         * - Full Parentheses & Sequential Merchant Math
+         * - Division By Zero Protection
+         * - LBP/USD Instant Converter + Extra Tools
+         */
+
+        let appMode = 'calc';
+        let activeInputId = 'val1';
+        let activeCalcCurr = 'LBP';
+
+        // Calculation State
+        let diffStep = 1;
+        let diffStart = null;
+        let timeUnit = 'sec';
+        let isFinalState = false;
+        let soundEnabled = true;
+        let clearConfirmPending = false;
+
+        // Repeated Equals Logic
+        let lastRepeatedOp = null;
+        let lastResultValue = 0;
+
+        let historyData = [];
+        let audioCtx = null;
+
+        // --- Fast Sound Engine ---
+        function playSound() {
+            if (!soundEnabled) return;
+            try {
+                if (!audioCtx) {
+                    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+                    if (AudioContextClass) audioCtx = new AudioContextClass();
+                }
+                if (!audioCtx) return;
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+
+                const o = audioCtx.createOscillator();
+                const g = audioCtx.createGain();
+                o.frequency.setValueAtTime(620, audioCtx.currentTime);
+                o.frequency.exponentialRampToValueAtTime(110, audioCtx.currentTime + 0.045);
+                g.gain.setValueAtTime(0.045, audioCtx.currentTime);
+                g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.04);
+                o.connect(g);
+                g.connect(audioCtx.destination);
+                o.start();
+                o.stop(audioCtx.currentTime + 0.045);
+            } catch (e) {}
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            loadState();
+            resetTempData();
+            setupFastClicks();
+            setupKeyboardSupport();
+            updateRateBadge();
+            updateUI(false);
+        });
+
+        function resetTempData() {
+            appMode = 'calc';
+            diffStep = 1;
+            diffStart = null;
+            timeUnit = 'sec';
+            isFinalState = false;
+            lastRepeatedOp = null;
+        }
+
+        function setActiveInput(id) {
+            activeInputId = id;
+            document.querySelectorAll('.curr-box').forEach(b => b.classList.remove('active'));
+            const el = document.getElementById(id);
+            if (el && el.parentElement) el.parentElement.classList.add('active');
+        }
+
+        // --- Ultra-Fast Touch & Click Binding ---
+        function setupFastClicks() {
+            let lastTouchTime = 0;
+
+            const resContainer = document.getElementById('resultContainer');
+            if (resContainer && !document.getElementById('btnCopyResult')) {
+                resContainer.style.position = 'relative';
+                const copyBtn = document.createElement('button');
+                copyBtn.id = 'btnCopyResult';
+                copyBtn.type = 'button';
+                copyBtn.setAttribute('aria-label', 'نسخ النتيجة');
+                copyBtn.style.cssText = 'position:absolute; top:10px; left:10px; height:28px; min-width:28px; padding:0 7px; border-radius:8px; border:1px solid var(--border-light); background:#FFFFFF; color:var(--text-secondary); display:inline-flex; align-items:center; justify-content:center; gap:4px; cursor:pointer; font-size:0.72rem; font-weight:700; z-index:5; box-shadow:0 1px 2px rgba(15,23,42,0.04); transition:all 0.12s ease;';
+                copyBtn.innerHTML = '<svg viewBox="0 0 24 24" style="width:15px;height:15px;fill:currentColor;"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>';
+                resContainer.appendChild(copyBtn);
+            }
+
+            let copyResetTimer = null;
+            const copyMainResult = () => {
+                playSound();
+                const resCont = document.getElementById('resultContainer');
+                const mainEl = document.getElementById('mainResult');
+                if (!mainEl || resCont.classList.contains('error-state')) return;
+
+                let textToCopy = '';
+                const ageBoxes = mainEl.querySelectorAll('.age-box-res');
+                if (ageBoxes.length > 0) {
+                    const parts = [];
+                    ageBoxes.forEach(b => {
+                        const n = b.querySelector('.age-num')?.innerText || '';
+                        const t = b.querySelector('.age-txt')?.innerText || '';
+                        if (n) parts.push(n + ' ' + t);
+                    });
+                    textToCopy = parts.join(' - ');
+                } else {
+                    textToCopy = mainEl.innerText.trim();
+                }
+
+                if (!textToCopy || textToCopy === '...') return;
+
+                const showCopiedFeedback = () => {
+                    const btn = document.getElementById('btnCopyResult');
+                    if (!btn) return;
+                    clearTimeout(copyResetTimer);
+                    btn.style.color = '#16A34A';
+                    btn.style.borderColor = '#BBF7D0';
+                    btn.style.background = '#F0FDF4';
+                    btn.innerHTML = '<svg viewBox="0 0 24 24" style="width:15px;height:15px;fill:currentColor;"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg><span>تم</span>';
+                    copyResetTimer = setTimeout(() => {
+                        btn.style.color = 'var(--text-secondary)';
+                        btn.style.borderColor = 'var(--border-light)';
+                        btn.style.background = '#FFFFFF';
+                        btn.innerHTML = '<svg viewBox="0 0 24 24" style="width:15px;height:15px;fill:currentColor;"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>';
+                    }, 1100);
+                };
+
+                const fallbackCopy = (str) => {
+                    try {
+                        const ta = document.createElement('textarea');
+                        ta.value = str;
+                        ta.setAttribute('readonly', '');
+                        ta.style.position = 'fixed';
+                        ta.style.top = '-9999px';
+                        ta.style.opacity = '0';
+                        document.body.appendChild(ta);
+                        ta.select();
+                        const ok = document.execCommand('copy');
+                        document.body.removeChild(ta);
+                        if (ok) showCopiedFeedback();
+                    } catch (err) {}
+                };
+
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    navigator.clipboard.writeText(textToCopy).then(showCopiedFeedback).catch(() => fallbackCopy(textToCopy));
+                } else {
+                    fallbackCopy(textToCopy);
+                }
+            };
+
+            document.querySelectorAll('.k-btn').forEach(btn => {
+                btn.addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    lastTouchTime = Date.now();
+                    btn.classList.add('pressed');
+                    handleInput(btn);
+                }, { passive: false });
+
+                btn.addEventListener('touchend', (e) => {
+                    e.preventDefault();
+                    lastTouchTime = Date.now();
+                    btn.classList.remove('pressed');
+                }, { passive: false });
+
+                btn.addEventListener('touchcancel', () => {
+                    btn.classList.remove('pressed');
+                });
+
+                btn.addEventListener('mousedown', (e) => {
+                    if (Date.now() - lastTouchTime < 650) return;
+                    e.preventDefault();
+                    btn.classList.add('pressed');
+                    handleInput(btn);
+                });
+
+                btn.addEventListener('mouseup', () => btn.classList.remove('pressed'));
+                btn.addEventListener('mouseleave', () => btn.classList.remove('pressed'));
+            });
+
+            const bindFast = (id, fn) => {
+                const el = document.getElementById(id);
+                if (!el) return;
+                el.addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    lastTouchTime = Date.now();
+                    el.classList.add('pressed');
+                    fn();
+                }, { passive: false });
+                el.addEventListener('touchend', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    lastTouchTime = Date.now();
+                    el.classList.remove('pressed');
+                }, { passive: false });
+                el.addEventListener('touchcancel', () => {
+                    el.classList.remove('pressed');
+                });
+                el.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    if (Date.now() - lastTouchTime < 650) return;
+                    fn();
+                });
+            };
+
+            bindFast('btnRate', openRate);
+            bindFast('btnGrid', toggleTools);
+            bindFast('btnHome', () => switchMode('calc'));
+            bindFast('toolAge', () => switchMode('age'));
+            bindFast('toolDiff', () => switchMode('diff'));
+            bindFast('toolScale', () => switchMode('scale'));
+            bindFast('toolSpeed', () => switchMode('speed'));
+            bindFast('toolHistory', openHistory);
+            bindFast('btnCloseHist', () => closeModals(false));
+            bindFast('btnCloseRate', () => closeModals(false));
+            bindFast('btnSaveRate', () => closeModals(false));
+            bindFast('btnClearHistory', clearHistory);
+            bindFast('btnBackspace', deleteChar);
+            bindFast('currencyToggleBtn', toggleCurrency);
+            bindFast('btnToggleSound', toggleSoundSetting);
+            bindFast('btnCopyResult', copyMainResult);
+
+            ['box1', 'box2', 'box3'].forEach((boxId, idx) => {
+                const box = document.getElementById(boxId);
+                const valId = 'val' + (idx + 1);
+                box.addEventListener('touchstart', (e) => {
+                    if (e.target.closest('#currencyToggleBtn') || e.target.closest('#label2')) return;
+                    lastTouchTime = Date.now();
+                    setActiveInput(valId);
+                }, { passive: true });
+                box.addEventListener('click', (e) => {
+                    if (Date.now() - lastTouchTime < 650) return;
+                    if (e.target.closest('#currencyToggleBtn') || e.target.closest('#label2')) return;
+                    setActiveInput(valId);
+                });
+            });
+
+            const label2 = document.getElementById('label2');
+            label2.addEventListener('touchstart', (e) => {
+                if (appMode === 'speed') {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    lastTouchTime = Date.now();
+                    toggleTimeUnit();
+                }
+            }, { passive: false });
+            label2.addEventListener('touchend', (e) => {
+                if (appMode === 'speed') {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    lastTouchTime = Date.now();
+                }
+            }, { passive: false });
+            label2.addEventListener('click', (e) => {
+                if (Date.now() - lastTouchTime < 650) return;
+                if (appMode === 'speed') {
+                    e.stopPropagation();
+                    toggleTimeUnit();
+                }
+            });
+
+            // إغلاق النوافذ عند الضغط على الخلفية المعتمة
+            document.querySelectorAll('.modal').forEach(modal => {
+                modal.addEventListener('click', (e) => {
+                    if (Date.now() - lastTouchTime < 650) {
+                        e.stopPropagation();
+                        e.preventDefault();
+                        return;
+                    }
+                    if (e.target === modal) closeModals(false);
+                }, true);
+            });
+        }
+
+        function toggleSoundSetting() {
+            soundEnabled = !soundEnabled;
+            const btn = document.getElementById('btnToggleSound');
+            btn.classList.toggle('active', soundEnabled);
+            btn.innerText = soundEnabled ? 'مفعّل' : 'مكتوم';
+            if (soundEnabled) playSound();
+            saveState();
+        }
+
+        function toggleCurrency() {
+            if (appMode !== 'calc') return;
+            playSound();
+            const txt = document.getElementById('currToggleText');
+            if (activeCalcCurr === 'LBP') {
+                activeCalcCurr = 'USD';
+                txt.innerText = 'دولار ($)';
+            } else {
+                activeCalcCurr = 'LBP';
+                txt.innerText = 'ليرة (L.L)';
+            }
+            calculate(false);
+        }
+
+        function toggleTimeUnit() {
+            playSound();
+            timeUnit = (timeUnit === 'sec') ? 'min' : (timeUnit === 'min') ? 'hour' : 'sec';
+            updateUI(true);
+        }
+
+        // --- Input Handling ---
+        function handleInput(btn) {
+            playSound();
+            // إغلاق قائمة الأدوات تلقائياً إذا كانت مفتوحة
+            document.getElementById('toolsMenu').classList.remove('show');
+
+            const val = btn.getAttribute('data-val');
+            const action = btn.getAttribute('data-action');
+            const resContainer = document.getElementById('resultContainer');
+            resContainer.classList.remove('error-state');
+
+            if (isFinalState) {
+                if (val && !['+', '-', '*', '/', '%'].includes(val)) {
+                    clearAll(false);
+                } else if (['+', '-', '*', '/', '%'].includes(val)) {
+                    document.getElementById('val1').value = formatString(lastResultValue.toString());
+                    isFinalState = false;
+                    resContainer.classList.remove('final-state');
+                } else if (action === 'parens') {
+                    clearAll(false);
+                } else {
+                    isFinalState = false;
+                    resContainer.classList.remove('final-state');
+                }
+            }
+
+            if (val) {
+                insertChar(val);
+            } else if (action) {
+                if (action === 'clear') clearAll(true);
+                else if (action === 'parens') {
+                    if (appMode === 'calc') insertParens();
+                }
+                else if (action === 'calc') calculate(true);
+            }
+        }
+
+        function cleanString(str) {
+            if (!str) return '';
+            return str.replace(/,/g, '').replace(/×/g, '*').replace(/÷/g, '/');
+        }
+
+        function formatString(str) {
+            if (!str) return '';
+            let visual = str.replace(/\*/g, '×').replace(/\//g, '÷');
+            return visual.replace(/(\d+)(\.\d*)?/g, (match, p1, p2) => {
+                return p1.replace(/\B(?=(\d{3})+(?!\d))/g, ",") + (p2 || "");
+            });
+        }
+
+        document.querySelectorAll('.curr-val-input').forEach(el => {
+            el.removeAttribute('readonly');
+            const unlockFinal = () => {
+                if (isFinalState) {
+                    isFinalState = false;
+                    document.getElementById('resultContainer').classList.remove('final-state');
+                }
+            };
+            el.addEventListener('touchstart', unlockFinal, { passive: true });
+            el.addEventListener('click', unlockFinal);
+        });
+
+        function getRawCursorSpan(input) {
+            const val = input.value;
+            const rawVal = cleanString(val);
+            const selStart = typeof input.selectionStart === 'number' ? input.selectionStart : val.length;
+            const selEnd = typeof input.selectionEnd === 'number' ? input.selectionEnd : val.length;
+            const rawStart = cleanString(val.slice(0, selStart)).length;
+            const rawEnd = cleanString(val.slice(0, selEnd)).length;
+            return { rawVal, rawStart, rawEnd };
+        }
+
+        function setFormattedValueWithCursor(input, newRaw, rawCursorPos, shouldFormat) {
+            const formatted = shouldFormat ? formatString(newRaw) : newRaw;
+            input.value = formatted;
+            let targetPos = formatted.length;
+            if (rawCursorPos <= 0) {
+                targetPos = 0;
+            } else {
+                let count = 0;
+                for (let i = 0; i < formatted.length; i++) {
+                    if (formatted[i] !== ',') count++;
+                    if (count === rawCursorPos) {
+                        targetPos = i + 1;
+                        break;
+                    }
+                }
+            }
+            try {
+                input.focus({ preventScroll: true });
+                input.setSelectionRange(targetPos, targetPos);
+            } catch (e) {}
+        }
+
+        function insertChar(char) {
+            const input = document.getElementById(activeInputId);
+            if (!input) return;
+
+            const { rawVal, rawStart, rawEnd } = getRawCursorSpan(input);
+            let before = rawVal.slice(0, rawStart);
+            let after = rawVal.slice(rawEnd);
+
+            const operators = ['+', '-', '*', '/', '%'];
+            const lastChar = before.slice(-1);
+            const nextChar = after.charAt(0);
+
+            if (appMode === 'age' || appMode === 'diff') {
+                if (!/^\d+$/.test(char)) return;
+                const maxLen = activeInputId === 'val3' ? 4 : 2;
+                let newRaw = (before + char + after).slice(0, maxLen);
+                let nextCursor = Math.min(before.length + char.length, maxLen);
+                setFormattedValueWithCursor(input, newRaw, nextCursor, false);
+                if (activeInputId === 'val1' && newRaw.length >= 2) setActiveInput('val2');
+                else if (activeInputId === 'val2' && newRaw.length >= 2) setActiveInput('val3');
+                updateUI(true);
+                return;
+            }
+
+            if (before === '' && ['+', '*', '/', '%'].includes(char)) return;
+            if (lastChar === '(' && ['+', '*', '/', '%'].includes(char)) return;
+
+            if (operators.includes(char) && appMode === 'calc') {
+                if (operators.includes(lastChar) && lastChar !== '%') {
+                    before = before.slice(0, -1);
+                } else if (['+', '-', '*', '/'].includes(nextChar) && char !== '%') {
+                    after = after.slice(1);
+                }
+            }
+
+            if (char === '.') {
+                const currentNumBefore = before.split(/[\+\-\*\/\%\(\)]/).pop();
+                const currentNumAfter = after.split(/[\+\-\*\/\%\(\)]/)[0];
+                if ((currentNumBefore + currentNumAfter).includes('.')) return;
+                if (currentNumBefore === '') char = '0.';
+            }
+
+            if ((lastChar === '%' || lastChar === ')') && !operators.includes(char) && char !== '.' && char !== ')') {
+                char = '*' + char;
+            }
+
+            let newRaw = before + char + after;
+            let newCursorPos = before.length + char.length;
+            const shouldFormat = (appMode === 'calc' || appMode === 'scale');
+            setFormattedValueWithCursor(input, newRaw, newCursorPos, shouldFormat);
+
+            if (appMode === 'calc') calculate(false);
+            else updateUI(true);
+        }
+
+        function insertParens() {
+            const input = document.getElementById(activeInputId);
+            if (!input) return;
+
+            const { rawVal, rawStart, rawEnd } = getRawCursorSpan(input);
+            let before = rawVal.slice(0, rawStart);
+            let after = rawVal.slice(rawEnd);
+
+            const openCount = (before.match(/\(/g) || []).length;
+            const closeCount = (before.match(/\)/g) || []).length;
+            const lastChar = before.slice(-1);
+
+            let toAdd = '(';
+            if (openCount > closeCount && (/[\d%\)]/.test(lastChar))) {
+                toAdd = ')';
+            } else if (/[\d%\)]/.test(lastChar)) {
+                toAdd = '*(';
+            }
+
+            let newRaw = before + toAdd + after;
+            let newCursorPos = before.length + toAdd.length;
+            setFormattedValueWithCursor(input, newRaw, newCursorPos, true);
+            calculate(false);
+        }
+
+        function deleteChar() {
+            playSound();
+            const input = document.getElementById(activeInputId);
+            if (!input) return;
+
+            if (isFinalState) {
+                isFinalState = false;
+                document.getElementById('resultContainer').classList.remove('final-state');
+            }
+            document.getElementById('resultContainer').classList.remove('error-state');
+
+            const { rawVal, rawStart, rawEnd } = getRawCursorSpan(input);
+            let newRaw = rawVal;
+            let newCursorPos = rawStart;
+
+            if (rawStart !== rawEnd) {
+                newRaw = rawVal.slice(0, rawStart) + rawVal.slice(rawEnd);
+                newCursorPos = rawStart;
+            } else if (rawStart > 0) {
+                newRaw = rawVal.slice(0, rawStart - 1) + rawVal.slice(rawStart);
+                newCursorPos = rawStart - 1;
+            } else {
+                return;
+            }
+
+            const shouldFormat = (appMode === 'calc' || appMode === 'scale');
+            setFormattedValueWithCursor(input, newRaw, newCursorPos, shouldFormat);
+
+            if (appMode === 'calc') calculate(false);
+            else updateUI(true);
+        }
+
+        function clearAll(fullReset = true) {
+            ['val1', 'val2', 'val3'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.value = '';
+            });
+            if (fullReset) {
+                if (appMode === 'diff') {
+                    diffStep = 1;
+                    diffStart = null;
+                    setActiveInput('val1');
+                }
+                if (appMode === 'age') setActiveInput('val1');
+                lastRepeatedOp = null;
+            }
+            isFinalState = false;
+            const resContainer = document.getElementById('resultContainer');
+            resContainer.classList.remove('final-state', 'error-state');
+            document.getElementById('mainResult').style.fontSize = '';
+            document.getElementById('mainResult').innerText = '0';
+            document.getElementById('subResult').innerText = appMode === 'calc' ? (activeCalcCurr === 'LBP' ? '0 $' : '0 L.L') : '';
+            if (appMode !== 'calc') updateUI(false);
+        }
+
+        // --- المحرك الحسابي (Sequential + Parentheses + DivByZero Check) ---
+        function evaluateFlatSequential(exprStr) {
+            let tokens = exprStr.match(/(\d+(\.\d+)?)|([\+\-\*\/\%])/g);
+            if (!tokens) return { value: 0, divByZero: false };
+
+            // دمج الإشارة السالبة في بداية التعبير أو بعد عملية مباشرة (مثل 5 * -2)
+            let mergedTokens = [];
+            for (let i = 0; i < tokens.length; i++) {
+                if (
+                    tokens[i] === '-' &&
+                    (i === 0 || ['+', '-', '*', '/'].includes(tokens[i - 1])) &&
+                    i + 1 < tokens.length &&
+                    !isNaN(parseFloat(tokens[i + 1]))
+                ) {
+                    mergedTokens.push(String(-1 * parseFloat(tokens[i + 1])));
+                    i++;
+                } else {
+                    mergedTokens.push(tokens[i]);
+                }
+            }
+            tokens = mergedTokens;
+
+            // المعالجة الذكية للنسبة المئوية (منطق التاجر)
+            let processedTokens = [];
+            for (let i = 0; i < tokens.length; i++) {
+                if (tokens[i] === '%') {
+                    let currentVal = parseFloat(processedTokens.pop());
+                    if (isNaN(currentVal)) currentVal = 0;
+                    let prevOp = processedTokens.length > 0 ? processedTokens[processedTokens.length - 1] : null;
+                    let baseNumber = processedTokens.length > 1 ? parseFloat(processedTokens[processedTokens.length - 2]) : 0;
+
+                    if ((prevOp === '+' || prevOp === '-') && !isNaN(baseNumber)) {
+                        let percentValue = baseNumber * (currentVal / 100);
+                        processedTokens.push(String(percentValue));
+                    } else {
+                        processedTokens.push(String(currentVal / 100));
+                    }
+                } else {
+                    processedTokens.push(tokens[i]);
+                }
+            }
+            tokens = processedTokens;
+
+            // الحساب التراكمي التسلسلي
+            let result = 0;
+            let i = 0;
+            if (tokens.length > 0 && !isNaN(parseFloat(tokens[0]))) {
+                result = parseFloat(tokens[0]);
+                i = 1;
+            }
+
+            while (i < tokens.length) {
+                let token = tokens[i];
+                if (['+', '-', '*', '/'].includes(token)) {
+                    if (i + 1 < tokens.length) {
+                        let nextVal = parseFloat(tokens[i + 1]);
+                        if (!isNaN(nextVal)) {
+                            if (token === '+') result += nextVal;
+                            else if (token === '-') result -= nextVal;
+                            else if (token === '*') result *= nextVal;
+                            else if (token === '/') {
+                                if (nextVal === 0) {
+                                    return { value: 0, divByZero: true };
+                                }
+                                result /= nextVal;
+                            }
+                            i++;
+                        }
+                    }
+                }
+                i++;
+            }
+
+            // تنظيف أخطاء الفاصلة العائمة مثل 0.1 + 0.2
+            result = Number(Math.round(Number(result + 'e10')) + 'e-10') || 0;
+            return { value: result, divByZero: false };
+        }
+
+        function computeSequential(expr) {
+            if (!expr) return { value: 0, divByZero: false };
+
+            // إغلاق أي أقواس مفتوحة تلقائياً لحساب فوري سليم
+            let openCount = (expr.match(/\(/g) || []).length;
+            let closeCount = (expr.match(/\)/g) || []).length;
+            if (openCount > closeCount) {
+                expr += ')'.repeat(openCount - closeCount);
+            }
+
+            // حل الأقواس من الداخل إلى الخارج
+            let safetyCounter = 0;
+            while (expr.includes('(') && safetyCounter < 30) {
+                safetyCounter++;
+                let divZero = false;
+                expr = expr.replace(/\(([^\(\)]*)\)/g, (_, inner) => {
+                    const sub = evaluateFlatSequential(inner);
+                    if (sub.divByZero) divZero = true;
+                    return String(sub.value);
+                });
+                if (divZero) return { value: 0, divByZero: true };
+            }
+
+            return evaluateFlatSequential(expr);
+        }
+
+        function calculate(isEqualPressed) {
+            const resContainer = document.getElementById('resultContainer');
+            const mainResEl = document.getElementById('mainResult');
+            const subResEl = document.getElementById('subResult');
+
+            if (appMode === 'calc') {
+                const inputEl = document.getElementById('val1');
+                let rawInput = cleanString(inputEl.value);
+
+                if (!rawInput) {
+                    resContainer.classList.remove('error-state', 'final-state');
+                    fitText(mainResEl, '0', true);
+                    fitText(subResEl, activeCalcCurr === 'LBP' ? '0 $' : '0 L.L', false);
+                    return;
+                }
+
+                // تجاهل العمليات المعلقة بآخر السطر ما عدا % و )
+                let cleanExpr = rawInput.replace(/[\+\-\*\/\(]+$/, '');
+                if (!cleanExpr) {
+                    fitText(mainResEl, '0', true);
+                    return;
+                }
+
+                let calcOutput;
+                if (isEqualPressed && isFinalState && lastRepeatedOp) {
+                    let tempExpr = `${lastResultValue}${lastRepeatedOp.op}${lastRepeatedOp.val}`;
+                    calcOutput = computeSequential(tempExpr);
+                } else {
+                    calcOutput = computeSequential(cleanExpr);
+                    if (isEqualPressed && !calcOutput.divByZero) {
+                        const match = cleanExpr.match(/([\+\-\*\/])(\d+(\.\d+)?)$/);
+                        if (match) {
+                            lastRepeatedOp = { op: match[1], val: match[2] };
+                        } else {
+                            lastRepeatedOp = null;
+                        }
+                    }
+                }
+
+                // فحص القسمة على صفر
+                if (calcOutput.divByZero) {
+                    resContainer.classList.remove('final-state');
+                    resContainer.classList.add('error-state');
+                    mainResEl.innerText = 'لا يمكن القسمة على صفر';
+                    subResEl.innerText = 'صحّح العملية للمتابعة';
+                    return;
+                }
+
+                resContainer.classList.remove('error-state');
+                let result = calcOutput.value;
+                lastResultValue = result;
+
+                // تحويل العملة الفوري
+                const rate = parseFloat(document.getElementById('exchangeRate').value) || 89000;
+                let lbpVal = 0, usdVal = 0;
+                let mainText = '', subText = '';
+
+                if (activeCalcCurr === 'LBP') {
+                    lbpVal = result;
+                    usdVal = result / rate;
+                    mainText = formatReadable(lbpVal);
+                    subText = formatReadable(usdVal, 2) + ' $';
+                } else {
+                    usdVal = result;
+                    lbpVal = result * rate;
+                    mainText = formatReadable(usdVal) + ' $';
+                    subText = formatReadable(Math.round(lbpVal)) + ' L.L';
+                }
+
+                if (isEqualPressed) {
+                    addToHistory(cleanExpr, result, activeCalcCurr);
+                    isFinalState = true;
+                    resContainer.classList.add('final-state');
+                } else {
+                    isFinalState = false;
+                    resContainer.classList.remove('final-state');
+                }
+
+                fitText(mainResEl, mainText, true);
+                fitText(subResEl, subText, false);
+
+            } else if (appMode === 'diff' && isEqualPressed && diffStep === 1) {
+                let d = document.getElementById('val1').value;
+                let m = document.getElementById('val2').value;
+                let y = document.getElementById('val3').value;
+                if (d && m && y && y.length === 4) {
+                    diffStart = new Date(parseInt(y), parseInt(m) - 1, parseInt(d));
+                    clearAll(false);
+                    diffStep = 2;
+                    setActiveInput('val1');
+                    updateUI(true);
+                }
+            } else if (isEqualPressed) {
+                updateUI(true);
+            }
+        }
+
+        function liveCalculateOtherModes() {
+            const v1 = cleanString(document.getElementById('val1').value);
+            const v2 = cleanString(document.getElementById('val2').value);
+            const v3 = cleanString(document.getElementById('val3').value);
+            const mainRes = document.getElementById('mainResult');
+            const subRes = document.getElementById('subResult');
+            const rate = parseFloat(document.getElementById('exchangeRate').value) || 89000;
+
+            if (appMode === 'scale') {
+                let w = parseFloat(v1) || 0;
+                let p = parseFloat(v2) || 0;
+                let total = (w * p) / 1000;
+                fitText(mainRes, formatReadable(total), true);
+                subRes.innerText = total > 0 ? `الإجمالي (${formatReadable(total / rate, 2)} $)` : 'الإجمالي حسب الوزن';
+            }
+            else if (appMode === 'speed') {
+                let s = parseFloat(v1) || 0;
+                let t = parseFloat(v2) || 0;
+                let distKM = 0;
+                if (timeUnit === 'hour') distKM = s * t;
+                else if (timeUnit === 'min') distKM = s * (t / 60);
+                else distKM = s * (t / 3600);
+                fitText(mainRes, formatReadable(distKM, 3) + ' كم', true);
+                subRes.innerText = formatReadable(distKM * 1000, 1) + ' متر';
+            }
+            else if (appMode === 'age' || appMode === 'diff') {
+                let dateRes = null;
+                if (appMode === 'age') {
+                    dateRes = calculateAgeLogic(null, v1, v2, v3);
+                } else if (appMode === 'diff' && diffStep === 2) {
+                    if (diffStart && v1 && v2 && v3.length === 4) {
+                        const d2 = new Date(parseInt(v3), parseInt(v2) - 1, parseInt(v1));
+                        let t1 = diffStart.getTime();
+                        let t2 = d2.getTime();
+                        let start = (t1 < t2) ? diffStart : d2;
+                        let end = (t1 < t2) ? d2 : diffStart;
+                        let yy = end.getFullYear() - start.getFullYear();
+                        let mm = end.getMonth() - start.getMonth();
+                        let dd = end.getDate() - start.getDate();
+                        if (dd < 0) {
+                            mm--;
+                            let pm = new Date(end.getFullYear(), end.getMonth(), 0);
+                            dd += pm.getDate();
+                        }
+                        if (mm < 0) {
+                            yy--;
+                            mm += 12;
+                        }
+                        dateRes = { years: yy, months: mm, days: dd };
+                    }
+                }
+
+                if (dateRes && !dateRes.error) {
+                    mainRes.style.fontSize = '1rem';
+                    mainRes.innerHTML = `
+                        <div class="age-result-container">
+                            <div class="age-box-res"><span class="age-num">${dateRes.years}</span><span class="age-txt">سنة</span></div>
+                            <div class="age-box-res"><span class="age-num">${dateRes.months}</span><span class="age-txt">شهر</span></div>
+                            <div class="age-box-res"><span class="age-num">${dateRes.days}</span><span class="age-txt">يوم</span></div>
+                        </div>`;
+                    if (appMode === 'age') subRes.innerText = `عيد ميلادك القادم بعد: ${dateRes.nextBirthday} يوم`;
+                    else subRes.innerText = 'الفرق الزمني الدقيق';
+                } else if (dateRes && dateRes.error) {
+                    mainRes.innerText = dateRes.error;
+                } else {
+                    mainRes.style.fontSize = '1.8rem';
+                    mainRes.innerText = '...';
+                }
+            }
+        }
+
+        function calculateAgeLogic(targetDate, dStr, mStr, yStr) {
+            if (!dStr || !mStr || !yStr || yStr.length < 4) return null;
+            const d = parseInt(dStr);
+            const m = parseInt(mStr);
+            const y = parseInt(yStr);
+            if (d < 1 || d > 31 || m < 1 || m > 12) return { error: 'التاريخ غير صحيح' };
+            const birthDate = new Date(y, m - 1, d);
+            const refDate = targetDate ? targetDate : new Date();
+            let years = refDate.getFullYear() - birthDate.getFullYear();
+            let months = refDate.getMonth() - birthDate.getMonth();
+            let days = refDate.getDate() - birthDate.getDate();
+            if (days < 0) {
+                months--;
+                const prev = new Date(refDate.getFullYear(), refDate.getMonth(), 0);
+                days += prev.getDate();
+            }
+            if (months < 0) {
+                years--;
+                months += 12;
+            }
+            let nextB = null;
+            if (appMode === 'age') {
+                const today = new Date();
+                let next = new Date(today.getFullYear(), m - 1, d);
+                if (today > next) next.setFullYear(today.getFullYear() + 1);
+                const diffT = Math.abs(next - today);
+                nextB = Math.ceil(diffT / (1000 * 60 * 60 * 24));
+            }
+            return {
+                years: Math.abs(years),
+                months: Math.abs(months),
+                days: Math.abs(days),
+                nextBirthday: nextB
+            };
+        }
+
+        function fitText(el, text, isMain) {
+            const len = String(text).length;
+            let size = isMain ? 2.1 : 1.1;
+
+            if (isFinalState) {
+                size = isMain ? 2.35 : 1.2;
+                if (len > 12) size = isMain ? 1.9 : 1.05;
+                if (len > 18) size = isMain ? 1.55 : 0.95;
+                if (len > 24) size = isMain ? 1.25 : 0.85;
+            } else {
+                if (len > 12) size = isMain ? 1.85 : 1.0;
+                if (len > 18) size = isMain ? 1.5 : 0.9;
+                if (len > 24) size = isMain ? 1.2 : 0.8;
+            }
+            el.style.fontSize = size + 'rem';
+            el.innerText = text;
+        }
+
+        function formatReadable(num, maxDec = 8) {
+            if (num === undefined || num === null || isNaN(num)) return '0';
+            let str = parseFloat(Number(num).toFixed(maxDec)).toString();
+            let parts = str.split('.');
+            parts[0] = Number(parts[0]).toLocaleString('en-US');
+            return parts[0] + (parts[1] ? '.' + parts[1] : '');
+        }
+
+        let modalHistoryPushed = false;
+        let ignoreNextPopState = false;
+
+        function pushSubStateIfNeeded() {
+            if (!modalHistoryPushed) {
+                history.pushState({ subView: true }, '');
+                modalHistoryPushed = true;
+            }
+        }
+
+        function clearSubStateIfAtRoot(fromPopState) {
+            const hasOpenModal = Boolean(document.querySelector('.modal.show'));
+            const hasOpenMenu = document.getElementById('toolsMenu').classList.contains('show');
+            if (!hasOpenModal && !hasOpenMenu && appMode === 'calc') {
+                if (!fromPopState && modalHistoryPushed) {
+                    modalHistoryPushed = false;
+                    ignoreNextPopState = true;
+                    history.back();
+                } else {
+                    modalHistoryPushed = false;
+                }
+            }
+        }
+
+        function switchMode(mode, fromPopState = false) {
+            playSound();
+            appMode = mode;
+            clearAll(true);
+            document.getElementById('toolsMenu').classList.remove('show');
+
+            const box1 = document.getElementById('box1');
+            const box2 = document.getElementById('box2');
+            const box3 = document.getElementById('box3');
+            const currBtn = document.getElementById('currencyToggleBtn');
+            const label1 = document.getElementById('label1');
+            const btnHome = document.getElementById('btnHome');
+
+            const modeTitles = {
+                calc: 'الحاسبة',
+                scale: 'حاسبة الميزان',
+                speed: 'حاسبة السرعة',
+                age: 'حساب العمر',
+                diff: 'فرق التواريخ'
+            };
+            updateRateBadge();
+            btnHome.classList.toggle('home-active', mode === 'calc');
+
+            if (mode === 'calc') {
+                activeInputId = 'val1';
+                box1.style.display = 'flex';
+                box2.style.display = 'none';
+                box3.style.display = 'none';
+                currBtn.style.display = 'inline-flex';
+                label1.style.display = 'none';
+                activeCalcCurr = 'LBP';
+                document.getElementById('currToggleText').innerText = 'ليرة (L.L)';
+                document.getElementById('subModeHint').innerText = 'حساب فوري';
+                clearSubStateIfAtRoot(fromPopState);
+            } else {
+                box1.style.display = 'flex';
+                box2.style.display = 'flex';
+                currBtn.style.display = 'none';
+                label1.style.display = 'flex';
+                activeInputId = 'val1';
+                document.getElementById('subModeHint').innerText = modeTitles[mode];
+                pushSubStateIfNeeded();
+            }
+            setActiveInput(activeInputId);
+            updateUI(false);
+        }
+
+        function toggleTools() {
+            playSound();
+            const menu = document.getElementById('toolsMenu');
+            menu.classList.toggle('show');
+            if (menu.classList.contains('show')) {
+                pushSubStateIfNeeded();
+            } else {
+                clearSubStateIfAtRoot(false);
+            }
+        }
+
+        function updateUI(reCalc) {
+            const box2 = document.getElementById('box2');
+            const box3 = document.getElementById('box3');
+            const btnEqual = document.getElementById('btnEqual');
+
+            document.querySelectorAll('.tool-box').forEach(el => el.classList.remove('active'));
+            if (appMode !== 'calc') {
+                const activeTool = document.getElementById('tool' + appMode.charAt(0).toUpperCase() + appMode.slice(1));
+                if (activeTool) activeTool.classList.add('active');
+            }
+
+            btnEqual.innerText = '=';
+
+            if (appMode === 'calc') {
+                if (reCalc) calculate(false);
+            } else if (appMode === 'scale') {
+                box3.style.display = 'none';
+                box2.style.display = 'flex';
+                document.getElementById('label1').innerText = 'الوزن (غرام)';
+                document.getElementById('label2').innerText = 'سعر الكيلو';
+                if (reCalc) liveCalculateOtherModes();
+            } else if (appMode === 'speed') {
+                box3.style.display = 'none';
+                box2.style.display = 'flex';
+                document.getElementById('label1').innerText = 'السرعة (كم/سا)';
+                let unitT = 'ثانية';
+                if (timeUnit === 'min') unitT = 'دقيقة';
+                if (timeUnit === 'hour') unitT = 'ساعة';
+                document.getElementById('label2').innerHTML = `الوقت (${unitT}) <svg viewBox="0 0 24 24"><path d="M6.99 11L3 15l3.99 4v-3H14v-2H6.99v-3zM21 9l-3.99-4v3H10v2h7.01v3L21 9z"/></svg>`;
+                if (reCalc) liveCalculateOtherModes();
+            } else if (appMode === 'age' || appMode === 'diff') {
+                box3.style.display = 'flex';
+                box2.style.display = 'flex';
+                document.getElementById('label1').innerText = 'اليوم';
+                document.getElementById('label2').innerText = 'الشهر';
+                document.getElementById('label3').innerText = 'السنة';
+                if (appMode === 'diff') {
+                    document.getElementById('subResult').innerText = diffStep === 1 ? 'أدخل التاريخ الأول ثم اضغط التالي' : 'أدخل التاريخ الثاني';
+                    btnEqual.innerText = diffStep === 1 ? 'التالي' : '=';
+                } else {
+                    document.getElementById('subResult').innerText = 'أدخل تاريخ الميلاد كاملًا';
+                }
+                if (reCalc) liveCalculateOtherModes();
+            }
+            saveState();
+        }
+
+        function updateRateBadge() {
+            const badge = document.getElementById('headerRateBadge');
+            const titleEl = document.getElementById('headerModeTitle');
+            if (badge) badge.style.display = 'none';
+            if (titleEl) {
+                titleEl.style.fontFamily = "'Segoe UI', Roboto, Helvetica, Arial, sans-serif";
+                titleEl.style.fontSize = '1.1rem';
+                titleEl.style.fontWeight = '800';
+                titleEl.style.letterSpacing = '0.8px';
+                titleEl.style.color = 'var(--text-primary)';
+                titleEl.innerHTML = 'Calculator <span style="color:var(--primary); font-weight:700;">Pro</span>';
+            }
+        }
+
+        // --- السجل والنوافذ والتخزين ---
+        function openHistory() {
+            playSound();
+            document.getElementById('toolsMenu').classList.remove('show');
+            clearConfirmPending = false;
+            document.getElementById('clearHistText').innerText = 'مسح السجل';
+            renderHistory();
+            document.getElementById('historyModal').classList.add('show');
+            pushSubStateIfNeeded();
+        }
+
+        function openRate() {
+            playSound();
+            document.getElementById('toolsMenu').classList.remove('show');
+            document.getElementById('rateModal').classList.add('show');
+            pushSubStateIfNeeded();
+        }
+
+        function closeModals(fromPopState = false) {
+            document.querySelectorAll('.modal').forEach(m => m.classList.remove('show'));
+            updateRateBadge();
+            if (appMode === 'calc') calculate(false);
+            clearSubStateIfAtRoot(fromPopState);
+        }
+
+        window.addEventListener('popstate', () => {
+            if (ignoreNextPopState) {
+                ignoreNextPopState = false;
+                return;
+            }
+            modalHistoryPushed = false;
+            if (document.querySelector('.modal.show')) {
+                document.querySelectorAll('.modal').forEach(m => m.classList.remove('show'));
+                updateRateBadge();
+            }
+            if (document.getElementById('toolsMenu').classList.contains('show')) {
+                document.getElementById('toolsMenu').classList.remove('show');
+            }
+            if (appMode !== 'calc') {
+                switchMode('calc', true);
+            } else {
+                calculate(false);
+            }
+        });
+
+        function clearHistory() {
+            playSound();
+            if (historyData.length === 0) return;
+            if (!clearConfirmPending) {
+                clearConfirmPending = true;
+                document.getElementById('clearHistText').innerText = 'اضغط للتأكيد';
+                return;
+            }
+            historyData = [];
+            clearConfirmPending = false;
+            document.getElementById('clearHistText').innerText = 'مسح السجل';
+            saveState();
+            renderHistory();
+        }
+
+        function addToHistory(eq, res, curr) {
+            if (!eq || res === 0) return;
+            if (historyData.length > 0 && historyData[0].eq === eq && historyData[0].curr === curr) return;
+            const time = new Date().toLocaleTimeString('ar-LB', { hour: '2-digit', minute: '2-digit' });
+            historyData.unshift({ eq, res, curr, time });
+            if (historyData.length > 30) historyData.pop();
+            saveState();
+        }
+
+        function renderHistory() {
+            const list = document.getElementById('historyList');
+            list.innerHTML = '';
+            if (historyData.length === 0) {
+                list.innerHTML = '<li style="text-align:center; padding:24px; color:var(--text-secondary); font-weight:700;">لا توجد عمليات محفوظة بعد</li>';
+                return;
+            }
+            historyData.forEach(item => {
+                const li = document.createElement('li');
+                li.className = 'history-item';
+                let vEq = formatString(item.eq);
+                li.innerHTML = `
+                    <div>
+                        <div style="font-size:0.85rem; color:var(--text-secondary); direction:ltr; text-align:left;">${vEq}</div>
+                        <div style="font-size:0.7rem; color:var(--text-muted); margin-top:2px;">${item.time || ''}</div>
+                    </div>
+                    <div style="font-weight:800; font-size:1.05rem; color:var(--primary); direction:ltr;">= ${formatReadable(item.res)} ${item.curr === 'LBP' ? 'L.L' : '$'}</div>
+                `;
+                li.onclick = () => {
+                    playSound();
+                    closeModals(false);
+                    if (appMode !== 'calc') switchMode('calc');
+                    activeCalcCurr = item.curr;
+                    document.getElementById('currToggleText').innerText = (item.curr === 'LBP') ? 'ليرة (L.L)' : 'دولار ($)';
+                    document.getElementById('val1').value = formatString(item.eq);
+                    calculate(true);
+                };
+                list.appendChild(li);
+            });
+        }
+
+        function saveState() {
+            try {
+                localStorage.setItem('calc_rate', document.getElementById('exchangeRate').value);
+                localStorage.setItem('calc_hist', JSON.stringify(historyData));
+                localStorage.setItem('calc_sound', soundEnabled ? '1' : '0');
+            } catch (e) {}
+        }
+
+        function loadState() {
+            try {
+                if (localStorage.getItem('calc_rate')) {
+                    document.getElementById('exchangeRate').value = localStorage.getItem('calc_rate');
+                }
+                if (localStorage.getItem('calc_hist')) {
+                    historyData = JSON.parse(localStorage.getItem('calc_hist')) || [];
+                }
+                if (localStorage.getItem('calc_sound') !== null) {
+                    soundEnabled = localStorage.getItem('calc_sound') === '1';
+                    const btn = document.getElementById('btnToggleSound');
+                    btn.classList.toggle('active', soundEnabled);
+                    btn.innerText = soundEnabled ? 'مفعّل' : 'مكتوم';
+                }
+            } catch (e) {}
+        }
+
+        document.getElementById('exchangeRate').addEventListener('input', () => {
+            updateRateBadge();
+            updateUI(true);
+            saveState();
+        });
+
+        // --- دعم لوحة المفاتيح الفعلية ---
+        function setupKeyboardSupport() {
+            window.addEventListener('keydown', (e) => {
+                if (document.querySelector('.modal.show')) {
+                    if (e.key === 'Escape') closeModals(false);
+                    return;
+                }
+                if (e.ctrlKey || e.altKey || e.metaKey) return;
+
+                const key = e.key;
+                if (/^[0-9]$/.test(key)) {
+                    e.preventDefault();
+                    playSound();
+                    insertChar(key);
+                } else if (['+', '-', '*', '/', '%', '.'].includes(key)) {
+                    e.preventDefault();
+                    playSound();
+                    insertChar(key);
+                } else if (key === '(' || key === ')') {
+                    e.preventDefault();
+                    playSound();
+                    insertParens();
+                } else if (key === 'Enter' || key === '=') {
+                    e.preventDefault();
+                    playSound();
+                    calculate(true);
+                } else if (key === 'Backspace') {
+                    e.preventDefault();
+                    deleteChar();
+                } else if (key === 'Delete' || key === 'Escape') {
+                    e.preventDefault();
+                    playSound();
+                    clearAll(true);
+                }
+            });
+        }
+
+        // --- دعم زر الرجوع في AndroidIDE / WebView ---
+        function handleAndroidBack() {
+            if (document.querySelector('.modal.show')) {
+                closeModals(false);
+                sendToAndroidBridge("STAY");
+                return false;
+            }
+            if (document.getElementById('toolsMenu').classList.contains('show')) {
+                document.getElementById('toolsMenu').classList.remove('show');
+                sendToAndroidBridge("STAY");
+                return false;
+            }
+            if (appMode !== 'calc') {
+                switchMode('calc');
+                sendToAndroidBridge("STAY");
+                return false;
+            }
+            sendToAndroidBridge("EXIT");
+            return true;
+        }
+
+                function sendToAndroidBridge(message) {
+            if (window.AppInventor && window.AppInventor.setWebViewString) {
+                window.AppInventor.setWebViewString(message);
+            }
+            if (window.AndroidBridge && window.AndroidBridge.onBackState) {
+                window.AndroidBridge.onBackState(message);
+            }
+        }
+
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js').catch(() => {});
+            });
+        }
+    </script>
+</body>
+</html>
