@@ -294,9 +294,9 @@
             flex-shrink: 0;
         }
 
-        .curr-box {
+                .curr-box {
             flex: 1;
-            padding: 8px 12px;
+            padding: 6px 12px;
             border: 1.5px solid var(--border-light);
             background: var(--bg-display);
             border-radius: 14px;
@@ -305,8 +305,7 @@
             position: relative;
             display: flex;
             flex-direction: column;
-            overflow: hidden;
-            min-height: 64px;
+            min-height: 56px;
             justify-content: center;
         }
 
@@ -365,7 +364,8 @@
         }
 
         .curr-val-input {
-            font-size: 1.45rem;
+            font-size: 1.3rem;
+            font-family: var(--font-sans);
             font-weight: 800;
             direction: ltr;
             text-align: left;
@@ -374,15 +374,30 @@
             border: none;
             outline: none;
             width: 100%;
-            padding: 0;
+            padding: 0 0 4px 0;
             margin: 0;
             caret-color: var(--primary);
+            resize: none;
+            line-height: 1.4;
+            max-height: 85px;
+            overflow-y: auto;
+            overflow-x: hidden;
+            word-break: keep-all;
+            white-space: pre-wrap;
+        }
+
+        .curr-val-input::-webkit-scrollbar {
+            width: 3px;
+        }
+        
+        .curr-val-input::-webkit-scrollbar-thumb {
+            background: var(--border-light);
+            border-radius: 3px;
         }
 
         .curr-val-input::placeholder {
             color: var(--text-muted);
         }
-
         /* --- شريط الحذف الأوسط --- */
         .middle-toolbar {
             height: 36px;
@@ -737,8 +752,8 @@
             .result-line { min-height: 70px; padding: 8px 12px; margin-bottom: 5px; }
             .main-res { font-size: 1.75rem; }
             .sub-res { font-size: 0.95rem; }
-            .curr-box { min-height: 52px; padding: 5px 10px; }
-            .curr-val-input { font-size: 1.25rem; }
+            .curr-box { min-height: 48px; padding: 5px 10px; }
+            .curr-val-input { font-size: 1.15rem; }
             .middle-toolbar { height: 30px; }
             .keypad { gap: 6px; padding: 4px 12px 10px; }
             .k-btn { border-radius: 14px; }
@@ -820,24 +835,24 @@
                 <div class="curr-box active" id="box1">
                     <div class="box-top-row">
                         <div class="currency-toggle-btn" id="currencyToggleBtn">
-                            <span id="currToggleText">ليرة (L.L)</span>
+                            <span id="currToggleText">ليرة</span>
                             <svg viewBox="0 0 24 24" aria-hidden="true">
                                 <path d="M6.99 11L3 15l3.99 4v-3H14v-2H6.99v-3zM21 9l-3.99-4v3H10v2h7.01v3L21 9z"/>
                             </svg>
                         </div>
                         <div class="curr-label" id="label1" style="display:none">القيمة</div>
                     </div>
-                    <input type="text" class="curr-val-input" id="val1" inputmode="none" readonly placeholder="0">
+                    <textarea class="curr-val-input" id="val1" inputmode="none" readonly placeholder="0" rows="1"></textarea>
                 </div>
 
                 <div class="curr-box" id="box2" style="display:none">
                     <div class="curr-label" id="label2">---</div>
-                    <input type="text" class="curr-val-input" id="val2" inputmode="none" readonly placeholder="0">
+                    <textarea class="curr-val-input" id="val2" inputmode="none" readonly placeholder="0" rows="1"></textarea>
                 </div>
 
                 <div class="curr-box" id="box3" style="display:none">
                     <div class="curr-label" id="label3">السنة</div>
-                    <input type="text" class="curr-val-input" id="val3" inputmode="none" readonly placeholder="0000">
+                    <textarea class="curr-val-input" id="val3" inputmode="none" readonly placeholder="0" rows="1"></textarea>
                 </div>
             </div>
         </div>
@@ -1226,7 +1241,7 @@
                 txt.innerText = 'دولار ($)';
             } else {
                 activeCalcCurr = 'LBP';
-                txt.innerText = 'ليرة (L.L)';
+                txt.innerText = 'ليرة';
             }
             calculate(false);
         }
@@ -1276,12 +1291,16 @@
 
         function cleanString(str) {
             if (!str) return '';
-            return str.replace(/,/g, '').replace(/×/g, '*').replace(/÷/g, '/');
+            return str.replace(/,/g, '').replace(/\u200B/g, '').replace(/×/g, '*').replace(/÷/g, '/');
         }
 
         function formatString(str) {
             if (!str) return '';
             let visual = str.replace(/\*/g, '×').replace(/\//g, '÷');
+            
+            // إضافة مسافة صفرية العرض بعد الرموز للسماح بالكسر السليم للأسطر
+            visual = visual.replace(/([\+\-×÷\%])/g, '$1\u200B');
+            
             return visual.replace(/(\d+)(\.\d*)?/g, (match, p1, p2) => {
                 return p1.replace(/\B(?=(\d{3})+(?!\d))/g, ",") + (p2 || "");
             });
@@ -1312,13 +1331,19 @@
         function setFormattedValueWithCursor(input, newRaw, rawCursorPos, shouldFormat) {
             const formatted = shouldFormat ? formatString(newRaw) : newRaw;
             input.value = formatted;
+            
+            if (input.tagName.toLowerCase() === 'textarea') {
+                input.style.height = 'auto';
+                input.style.height = input.scrollHeight + 'px';
+            }
+
             let targetPos = formatted.length;
             if (rawCursorPos <= 0) {
                 targetPos = 0;
             } else {
                 let count = 0;
                 for (let i = 0; i < formatted.length; i++) {
-                    if (formatted[i] !== ',') count++;
+                    if (formatted[i] !== ',' && formatted[i] !== '\u200B') count++;
                     if (count === rawCursorPos) {
                         targetPos = i + 1;
                         break;
@@ -1328,6 +1353,9 @@
             try {
                 input.focus({ preventScroll: true });
                 input.setSelectionRange(targetPos, targetPos);
+                if (input.tagName.toLowerCase() === 'textarea') {
+                    input.scrollTop = input.scrollHeight;
+                }
             } catch (e) {}
         }
 
@@ -1446,7 +1474,10 @@
         function clearAll(fullReset = true) {
             ['val1', 'val2', 'val3'].forEach(id => {
                 const el = document.getElementById(id);
-                if (el) el.value = '';
+                if (el) {
+                    el.value = '';
+                    if (el.tagName.toLowerCase() === 'textarea') el.style.height = 'auto';
+                }
             });
             if (fullReset) {
                 if (appMode === 'diff') {
@@ -1462,7 +1493,7 @@
             resContainer.classList.remove('final-state', 'error-state');
             document.getElementById('mainResult').style.fontSize = '';
             document.getElementById('mainResult').innerText = '0';
-            document.getElementById('subResult').innerText = appMode === 'calc' ? (activeCalcCurr === 'LBP' ? '0 $' : '0 L.L') : '';
+            document.getElementById('subResult').innerText = appMode === 'calc' ? (activeCalcCurr === 'LBP' ? '0 $' : '0 ليرة') : '';
             if (appMode !== 'calc') updateUI(false);
         }
 
@@ -1636,7 +1667,7 @@
                     usdVal = result;
                     lbpVal = result * rate;
                     mainText = formatReadable(usdVal) + ' $';
-                    subText = formatReadable(Math.round(lbpVal)) + ' L.L';
+                    subText = formatReadable(Math.round(lbpVal)) + ' ليرة';
                 }
 
                 if (isEqualPressed) {
@@ -1855,7 +1886,7 @@
                 currBtn.style.display = 'inline-flex';
                 label1.style.display = 'none';
                 activeCalcCurr = 'LBP';
-                document.getElementById('currToggleText').innerText = 'ليرة (L.L)';
+                document.getElementById('currToggleText').innerText = 'ليرة';
                 document.getElementById('subModeHint').innerText = 'حساب فوري';
                 clearSubStateIfAtRoot(fromPopState);
             } else {
@@ -2028,15 +2059,20 @@
                         <div style="font-size:0.85rem; color:var(--text-secondary); direction:ltr; text-align:left;">${vEq}</div>
                         <div style="font-size:0.7rem; color:var(--text-muted); margin-top:2px;">${item.time || ''}</div>
                     </div>
-                    <div style="font-weight:800; font-size:1.05rem; color:var(--primary); direction:ltr;">= ${formatReadable(item.res)} ${item.curr === 'LBP' ? 'L.L' : '$'}</div>
+                    <div style="font-weight:800; font-size:1.05rem; color:var(--primary); direction:ltr;">= ${formatReadable(item.res)} ${item.curr === 'LBP' ? 'ليرة' : '$'}</div>
                 `;
                 li.onclick = () => {
                     playSound();
                     closeModals(false);
                     if (appMode !== 'calc') switchMode('calc');
                     activeCalcCurr = item.curr;
-                    document.getElementById('currToggleText').innerText = (item.curr === 'LBP') ? 'ليرة (L.L)' : 'دولار ($)';
-                    document.getElementById('val1').value = formatString(item.eq);
+                    document.getElementById('currToggleText').innerText = (item.curr === 'LBP') ? 'ليرة' : 'دولار ($)';
+                    const val1El = document.getElementById('val1');
+                    val1El.value = formatString(item.eq);
+                    if (val1El.tagName.toLowerCase() === 'textarea') {
+                        val1El.style.height = 'auto';
+                        val1El.style.height = val1El.scrollHeight + 'px';
+                    }
                     calculate(true);
                 };
                 list.appendChild(li);
